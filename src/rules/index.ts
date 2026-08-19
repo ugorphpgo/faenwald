@@ -81,6 +81,7 @@ export type {
   Applied,
   BattleState,
   Board,
+  BoardEdge,
   Event,
   Facing,
   Hex,
