@@ -64,11 +64,15 @@ describe("Бегство", () => {
     assert.ok(state.log.some((event) => event.kind === "squadRouted" && event.squad === "coward"));
   });
 
-  test("в Фазе Бегства законны только шаги к ближайшему краю", () => {
+  // Карты этого файла Обоз не объявляют, поэтому «свой край» здесь означает
+  // «любой ближайший» — умолчание тикета 09. Сторонний Обоз и его последствия
+  // для кратчайшего маршрута проверяет `baggage.test.ts`.
+  test("в Фазе Бегства законны только шаги к ближайшему краю (Карта без Обоза)", () => {
     let state = grindMorale(brittle(), "bully", "coward");
     while (!(state.phase.kind === "rout" && state.phase.squad === "coward")) {
       state = ok(state, { kind: "endTurn" });
     }
+    assert.equal(state.board.baggage, undefined, "тест опирается на умолчание, Обоз не объявлен");
 
     const steps = legalIntents(state).filter((intent) => intent.kind === "step");
     assert.ok(steps.length > 0, "бежать есть куда");
@@ -76,7 +80,7 @@ describe("Бегство", () => {
     const from = squadById(state, "coward")!.hex;
     for (const step of steps) {
       assert.ok(
-        distanceToEdge(step.to, state.board) < distanceToEdge(from, state.board),
+        distanceToEdge(step.to, state.board, "blue") < distanceToEdge(from, state.board, "blue"),
         `шаг в ${step.to.col},${step.to.row} не приближает к краю`,
       );
     }

@@ -1,5 +1,5 @@
 import { distance } from "./hex.ts";
-import type { Board, Hex, Side, Squad } from "./state.ts";
+import type { Board, BoardEdge, Hex, Side, Squad } from "./state.ts";
 
 /** Мораль, снимаемая с союзников за гибель или Бегство соседнего Отряда. */
 export const MORALE_SHOCK_ADJACENT = 10;
@@ -7,15 +7,38 @@ export const MORALE_SHOCK_NEAR = 5;
 /** Мораль, которую присутствие Правителя добавляет каждому Отряду его стороны. */
 export const RULER_MORALE_BONUS = 10;
 
-/**
- * Сколько Гексов Отряду до ближайшего края карты. Бежать он обязан кратчайшим
- * маршрутом, поэтому законны только шаги, уменьшающие это число.
- */
-export const distanceToEdge = (hex: Hex, board: Board): number =>
-  Math.min(hex.col, hex.row, board.width - 1 - hex.col, board.height - 1 - hex.row);
+/** Сколько Гексов до конкретного края Карты. */
+const distanceToNamedEdge = (hex: Hex, board: Board, edge: BoardEdge): number => {
+  switch (edge) {
+    case "north":
+      return hex.row;
+    case "south":
+      return board.height - 1 - hex.row;
+    case "west":
+      return hex.col;
+    case "east":
+      return board.width - 1 - hex.col;
+  }
+};
 
-/** Отряд дошёл до края и покидает Бой. */
-export const atEdge = (hex: Hex, board: Board): boolean => distanceToEdge(hex, board) === 0;
+/**
+ * Сколько Гексов Отряду до Обоза его стороны. Бежать он обязан кратчайшим
+ * маршрутом, поэтому законны только шаги, уменьшающие это число.
+ *
+ * Карта, не объявившая Обоз, сохраняет прежнее поведение: годится любой
+ * ближайший край доски. Это умолчание держит на плаву старые сюиты и партии,
+ * сохранённые до тикета 08.
+ */
+export const distanceToEdge = (hex: Hex, board: Board, side?: Side): number => {
+  const edge = side === undefined ? undefined : board.baggage?.[side];
+  if (edge === undefined) {
+    return Math.min(hex.col, hex.row, board.width - 1 - hex.col, board.height - 1 - hex.row);
+  }
+  return distanceToNamedEdge(hex, board, edge);
+};
+
+/** Отряд дошёл до Обоза своей стороны и покидает Бой. */
+export const atEdge = (hex: Hex, board: Board, side?: Side): boolean => distanceToEdge(hex, board, side) === 0;
 
 /**
  * Мораль, снимаемая с союзников погибшего или бежавшего Отряда: 10 соседям, 5

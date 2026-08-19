@@ -462,8 +462,9 @@ const applyStep = (state: BattleState, to: Hex): Applied => {
   if (!isPassable(state.board, to, state.season)) return reject("impassable");
   if (squadAt(state, to) !== undefined) return reject("hexOccupied");
 
-  // Бежать разрешено только кратчайшим маршрутом к ближайшему краю карты.
-  if (squad.routing && distanceToEdge(to, state.board) >= distanceToEdge(squad.hex, state.board)) {
+  // Бежать разрешено только кратчайшим маршрутом к Обозу своей стороны — даже
+  // если чужой край ближе: паникующий Отряд бежит домой, а не в чужой тыл.
+  if (squad.routing && distanceToEdge(to, state.board, squad.side) >= distanceToEdge(squad.hex, state.board, squad.side)) {
     return reject("notShortestRoute");
   }
 
@@ -493,7 +494,7 @@ const applyStep = (state: BattleState, to: Hex): Applied => {
     const moved: Squad = { ...squad, hex: to, movement: remaining, chargeSteps };
     const events: Event[] = [{ kind: "stepped", squad: squad.id, from: squad.hex, to, cost }];
 
-    if (moved.routing && atEdge(to, state.board)) {
+    if (moved.routing && atEdge(to, state.board, moved.side)) {
       events.push({ kind: "squadLeftBoard", squad: moved.id });
       return commit(state, {
         squads: state.squads.filter((candidate) => candidate.id !== moved.id),
@@ -505,9 +506,9 @@ const applyStep = (state: BattleState, to: Hex): Applied => {
       });
     }
 
-    // Обоз — северный или южный край карты: дальнобойный Отряд, дошедший туда,
-    // пополняет Боезапас.
-    const atBaggage = to.row === 0 || to.row === state.board.height - 1;
+    // Обоз своей стороны: дальнобойный Отряд, дошедший туда, пополняет
+    // Боезапас. Чужой Обоз не годится — стрел там для него нет.
+    const atBaggage = atEdge(to, state.board, moved.side);
     const restocked: Squad =
       atBaggage && SQUAD_TYPES[moved.type].branch === "ranged" && moved.ammo < AMMO_CAPACITY
         ? { ...moved, ammo: AMMO_CAPACITY }
