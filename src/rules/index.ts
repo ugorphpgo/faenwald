@@ -103,6 +103,8 @@ export type {
 export type { Intent } from "./intent.ts";
 export type { Branch, SquadType, SquadTypeId, Weight } from "./catalog/squad-types.ts";
 export type { Terrain, TerrainId } from "./catalog/terrain.ts";
+export type { SetupViolation, SetupViolationKind } from "./setup.ts";
+export { validateSetup } from "./setup.ts";
 export type { BattleReport, Fate, SquadOutcome } from "./report.ts";
 export type { RulerFate } from "./rout.ts";
 export { SQUAD_TYPES } from "./catalog/squad-types.ts";

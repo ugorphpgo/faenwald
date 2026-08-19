@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { start, apply, squadById } from "../rules/index.ts";
+import { start, apply, squadById, validateSetup } from "../rules/index.ts";
 import type { BattleState, Board, Hex, Side, SquadSetup } from "../rules/index.ts";
 import { HILL_AND_THICKET, MAPS, OPEN_FIELD } from "./fixtures.ts";
 
@@ -38,6 +38,19 @@ describe("Фикстуры Карт", () => {
           const [col, row] = key.split(",").map(Number);
           assert.ok(inBoard({ col: col!, row: row! }, board), `Местность вне Карты: ${key}`);
         }
+      });
+
+      test("на Карте существует законная расстановка", () => {
+        // Первый проходимый Гекс каждой Зоны — если такого нет, зона
+        // нарисована поверх гор и играть на Карте нельзя.
+        const pick = (side: Side): SquadSetup => {
+          const zone = board.deployment?.[side] ?? [];
+          const hex = zone[0];
+          assert.ok(hex !== undefined, `у ${side} пустая Зона расстановки`);
+          return { id: side, side, type: "mediumInfantry", hex: hex!, facing: 0 };
+        };
+
+        assert.deepEqual(validateSetup({ board, squads: [pick("blue"), pick("red")] }), []);
       });
     });
   }
